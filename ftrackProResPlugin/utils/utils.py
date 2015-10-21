@@ -64,14 +64,14 @@ def generateSlugMovie(tmpDir, firstFrame, firstFrameStr):
     :param firstFrame: first frame
     :return:
     '''
-    if len(str(firstFrame)) == 1:
+    if firstFrameStr[0] == '0':
         frameLen = len(str(firstFrameStr))
-        slugMovCmd = 'ffmpeg.exe -y -an -i "%s\\slug.%%0%sd.jpg" ' \
-                     '-vcodec prores -profile:v 2 "%s\\slug.mov"' % (tmpDir, frameLen, tmpDir)
+        slugMovCmd = 'ffmpeg.exe -y -start_number %s -an -i "%s\\slug.%%0%sd.jpg" ' \
+                     '-vcodec prores -profile:v 2 "%s\\slug.mov"' % (firstFrame, tmpDir, frameLen, tmpDir)
     else:
         frameLen = len(str(firstFrameStr))-1
-        slugMovCmd = 'ffmpeg.exe -y -an -i "%s\\slug.1%%0%sd.jpg" ' \
-                     '-vcodec prores -profile:v 2 "%s\\slug.mov"' % (tmpDir, frameLen, tmpDir)
+        slugMovCmd = 'ffmpeg.exe -y -start_number %s -an -i "%s\\slug.1%%0%sd.jpg" ' \
+                     '-vcodec prores -profile:v 2 "%s\\slug.mov"' % (firstFrame, tmpDir, frameLen, tmpDir)
     args = shlex.split(slugMovCmd)
     result = subprocess.call(args, shell=True)
     return result
@@ -88,17 +88,17 @@ def generateFileMovie(inputFolder, tmpDir, outputFile, firstFrame, fileName, ima
         filePath = '%s\\%s' % (inputFolder, fileName)
     inputFile = '%s.%s.%s' % (fileName, firstFrame, imageExt)
 
-    if len(str(firstFrame)) == 1:
+    if firstFrameStr[0] == '0':
         frameLen = len(str(firstFrameStr))
-        finalMovCmd = 'ffmpeg.exe -y -an -i "%s.%%0%sd.%s" ' \
+        finalMovCmd = 'ffmpeg.exe -y -start_number %s -an -i "%s.%%0%sd.%s" ' \
                       '-i "%s\\slug.mov" -metadata comment="Source Image:%s" -filter_complex "overlay=1:1" ' \
-                      '-vcodec prores -profile:v 2 "%s" ' % (filePath, frameLen, imageExt,
+                      '-vcodec prores -profile:v 2 "%s" ' % (firstFrame, filePath, frameLen, imageExt,
                                                              tmpDir, inputFile, outputFile)
     else:
         frameLen = len(str(firstFrameStr))-1
-        finalMovCmd = 'ffmpeg.exe -y -an -i "%s.1%%0%sd.%s" ' \
+        finalMovCmd = 'ffmpeg.exe -y -start_number %s -an -i "%s.1%%0%sd.%s" ' \
                       '-i "%s\\slug.mov" -metadata comment="Source Image:%s" -filter_complex "overlay=1:1" ' \
-                      '-vcodec prores -profile:v 2 "%s" ' % (filePath, frameLen, imageExt,
+                      '-vcodec prores -profile:v 2 "%s" ' % (firstFrame, filePath, frameLen, imageExt,
                                                              tmpDir, inputFile, outputFile)
 
     return finalMovCmd
@@ -114,18 +114,18 @@ def generateFileMovieNoSlug(inputFolder, outputFile, firstFrame, fileName, image
     else:
         filePath = '%s\\%s' % (inputFolder, fileName)
 
-    if len(str(firstFrame)) == 1:
+    if firstFrameStr[0] == '0':
         frameLen = len(str(firstFrameStr))
-        finalMovCmd = 'ffmpeg.exe -y -an -i "%s.%%0%sd.%s" ' \
+        finalMovCmd = 'ffmpeg.exe -y -start_number %s -an -i "%s.%%0%sd.%s" ' \
                       '-metadata comment="Source Image:%s.%s.%s" -vcodec prores ' \
-                      '-profile:v 2 "%s" ' % (filePath, frameLen, imageExt, fileName,
-                                              firstFrame,imageExt, outputFile)
+                      '-profile:v 2 "%s" ' % (firstFrame, filePath, frameLen, imageExt,
+                                              fileName, firstFrame,imageExt, outputFile)
     else:
         frameLen = len(str(firstFrameStr))-1
-        finalMovCmd = 'ffmpeg.exe -y -an -i "%s.1%%0%sd.%s" ' \
+        finalMovCmd = 'ffmpeg.exe -y -start_number %s -an -i "%s.1%%0%sd.%s" ' \
                       '-metadata comment="Source Image:%s.%s.%s" -vcodec prores ' \
-                      '-profile:v 2 "%s" ' % (filePath, frameLen, imageExt, fileName,
-                                              firstFrame,imageExt, outputFile)
+                      '-profile:v 2 "%s" ' % (firstFrame, filePath, frameLen, imageExt,
+                                              fileName, firstFrame,imageExt, outputFile)
 
     return finalMovCmd
 
