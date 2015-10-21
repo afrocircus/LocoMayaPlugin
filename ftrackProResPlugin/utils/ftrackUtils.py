@@ -206,3 +206,11 @@ def setTaskStatus(filePath, statusName):
 def getProjectFromShot(id):
     shot = ftrack.Shot(id=id)
     return shot.getProject().getName()
+
+def checkLogname(username):
+    os.environ['LOGNAME']=username
+    try:
+        ftrack.getProjects()
+        return True
+    except:
+        return False

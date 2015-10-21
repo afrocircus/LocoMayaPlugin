@@ -15,8 +15,6 @@ from  utils import utils
 from gui import fileBrowser
 from gui import ftrackUpload
 
-os.environ['LOGNAME'] = 'Natasha'
-
 
 class FtrackProResMayaPlugin(QtGui.QWidget):
 
@@ -28,7 +26,7 @@ class FtrackProResMayaPlugin(QtGui.QWidget):
         self.setLayout(QtGui.QGridLayout())
         self.setMinimumSize(320,200)
         self.setObjectName('FtrackProResMayaPlugin')
-        tabWidget = QtGui.QTabWidget()
+        self.tabWidget = QtGui.QTabWidget()
         frameBox = QtGui.QWidget()
         viewerBox = QtGui.QGroupBox('')
         viewerBox.setMaximumSize(500, 150)
@@ -100,11 +98,33 @@ class FtrackProResMayaPlugin(QtGui.QWidget):
         hLayout2.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum))
         frameLayout.addLayout(hLayout2)
         frameLayout.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding))
+        self.tabWidget.addTab(frameBox, 'ProRes Options')
 
-        tabWidget.addTab(frameBox, 'ProRes Options')
-        tabWidget.addTab(self.movieWidget, 'Ftrack Upload Options')
-        self.layout().addWidget(tabWidget)
+        loginFile = os.path.join(os.environ['TEMP'], 'ftrack_login.txt')
+        if self.loginNeeded(loginFile):
+            self.loginWidget = ftrackUpload.LoginWidget(filename=loginFile)
+            self.loginWidget.loginSuccessful.connect(self.updateTabWidget)
+            self.tabWidget.addTab(self.loginWidget, 'Ftrack Login')
+        else:
+            self.tabWidget.addTab(self.movieWidget, 'Ftrack Upload Options')
+        self.layout().addWidget(self.tabWidget)
         self.getFrameCount()
+
+    def loginNeeded(self, loginFile):
+        if os.path.exists(loginFile):
+            f = open(loginFile, 'r')
+            username = f.readline().split(':')[1]
+            if ftrackUtils.checkLogname(username):
+                os.environ['LOGNAME'] = username
+                return False
+            else:
+                return True
+        else:
+            return True
+
+    def updateTabWidget(self, tabStr):
+        self.tabWidget.removeTab(1)
+        self.tabWidget.addTab(self.movieWidget, 'Ftrack Upload Options')
 
     def getFrameCount(self):
         infile = str(self.inputWidget.getFilePath())

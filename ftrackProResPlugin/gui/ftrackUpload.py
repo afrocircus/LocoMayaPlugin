@@ -133,6 +133,41 @@ class MyLabel(QtGui.QLabel):
         painter.drawText(self.rect(), self.alignment(), elided)
 
 
+class LoginWidget(QtGui.QWidget):
+
+    loginSuccessful = Signal(str)
+
+    def __init__(self, parent=None, filename=None):
+        QtGui.QWidget.__init__(self, parent)
+        self.setLayout(QtGui.QGridLayout())
+        frameBox = QtGui.QWidget()
+        frameLayout = QtGui.QGridLayout()
+        frameBox.setLayout(frameLayout)
+        frameBox.setMaximumSize(500, 250)
+        frameLayout.addWidget(QtGui.QLabel('Username:'), 0, 0)
+        self.usernameEdit = QtGui.QLineEdit()
+        frameLayout.addWidget(self.usernameEdit, 0, 1)
+        self.loginButton = QtGui.QPushButton('Login')
+        self.loginButton.clicked.connect(lambda: self.loginButtonPressed(filename))
+        frameLayout.addWidget(self.loginButton, 2, 0)
+        self.infoLabel = QtGui.QLabel()
+        frameLayout.addWidget(self.infoLabel, 3, 1)
+        self.layout().addWidget(frameBox)
+        self.layout().addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding), 1, 0)
+
+    def loginButtonPressed(self, filename):
+        if not filename:
+            loginFile = os.path.join(os.environ['TEMP'], 'ftrack_login.txt')
+        f = open(filename, 'w')
+        username = str(self.usernameEdit.text())
+        f.write(('LOGNAME:%s' % username))
+        f.close()
+        if ftrackUtils.checkLogname(username):
+            self.loginSuccessful.emit('Successful Login')
+        else:
+            self.infoLabel.setText('Incorrect username. Please try again.')
+
+
 class MovieUploadWidget(QtGui.QWidget):
 
     uploadComplete = Signal(str)
