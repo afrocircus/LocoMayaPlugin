@@ -14,7 +14,7 @@ class BrowserDialog(QtGui.QDialog):
 
     winClosed = Signal(str)
 
-    def __init__(self, taskPath, parent=None):
+    def __init__(self, taskPath, parent=None, session=None):
         QtGui.QDialog.__init__(self, parent)
         self.setLayout(QtGui.QVBoxLayout())
         self.taskPath = taskPath
@@ -24,10 +24,10 @@ class BrowserDialog(QtGui.QDialog):
         viewerBox.setLayout(vLayout)
 
         projList = QtGui.QListWidget()
-        self.createProjList(projList)
-        projList.itemClicked.connect(self.projItemClicked)
+        self.createProjList(session, projList)
+        projList.itemClicked.connect(lambda: self.projItemClicked(session, projList.currentItem()))
         self.taskList = QtGui.QListWidget()
-        self.taskList.itemClicked.connect(self.taskItemClicked)
+        self.taskList.itemClicked.connect(lambda: self.taskItemClicked(session, self.taskList.currentItem()))
         hLayout1 = QtGui.QHBoxLayout()
         hLayout1.addWidget(projList)
         hLayout1.addWidget(self.taskList)
@@ -48,22 +48,22 @@ class BrowserDialog(QtGui.QDialog):
         self.projPath = ''
         if not self.taskPath == '':
             self.pathEdit.setText(self.taskPath)
-            self.createTaskList(self.taskPath)
-            if ftrackUtils.isTask(taskPath):
-                self.setProjPath()
+            self.createTaskList(session, self.taskPath)
+            if ftrackUtils.isTask(session, taskPath):
+                self.setProjPath(session)
 
-    def createProjList(self, projList):
-        projects = ftrackUtils.getAllProjectNames()
+    def createProjList(self, session, projList):
+        projects = ftrackUtils.getAllProjectNames(session)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("%s\\PNG\\home.png" % iconPath))
         for project in projects:
             item = QtGui.QListWidgetItem(icon, project)
             projList.addItem(item)
 
-    def projItemClicked(self, item):
+    def projItemClicked(self, session, item):
         self.projPath = ''
         self.pathEdit.setText(str(item.text()))
-        self.createTaskList(str(item.text()))
+        self.createTaskList(session, str(item.text()))
         self.setButton.setDisabled(True)
 
     def isAllTasks(self):
@@ -72,7 +72,7 @@ class BrowserDialog(QtGui.QDialog):
                 return False
         return True
 
-    def setProjPath(self):
+    def setProjPath(self, session):
         if self.isAllTasks():
             self.setButton.setDisabled(False)
             if self.projPath == '':
@@ -80,8 +80,9 @@ class BrowserDialog(QtGui.QDialog):
                 self.projPath = tmpPath.split(' / ')[0]
                 for p in tmpPath.split(' / ')[1:-1]:
                     self.projPath = '%s / %s' % (self.projPath, p)
+                self.createTaskList(session, self.projPath)
 
-    def taskItemClicked(self, item):
+    def taskItemClicked(self, session, item):
         pathtext = str(self.pathEdit.text())
         projPath = '%s / %s' % (pathtext, str(item.text()))
         if self.isAllTasks():
@@ -90,27 +91,28 @@ class BrowserDialog(QtGui.QDialog):
             projPath = '%s / %s' % (self.projPath, str(item.text()))
             self.setButton.setDisabled(False)
         self.pathEdit.setText(projPath)
-        self.createTaskList(projPath)
+        self.createTaskList(session, projPath)
 
-    def createTaskList(self, projPath):
-        self.childList = ftrackUtils.getAllChildren(projPath)
-        self.taskList.clear()
-        for type, name in self.childList:
-            if type == 'assetbuild':
-                icon = QtGui.QIcon()
-                icon.addPixmap(QtGui.QPixmap("%s\\PNG\\box.png" % iconPath))
-                item = QtGui.QListWidgetItem(icon, name)
-            elif type == 'task':
-                icon = QtGui.QIcon()
-                icon.addPixmap(QtGui.QPixmap("%s\\PNG\\signup.png" % iconPath))
-                item = QtGui.QListWidgetItem(icon, name)
-            elif type == 'sequence':
-                icon = QtGui.QIcon()
-                icon.addPixmap(QtGui.QPixmap("%s\\PNG\\movie.png" % iconPath))
-                item = QtGui.QListWidgetItem(icon, name)
-            else:
-                item = QtGui.QListWidgetItem(name)
-            self.taskList.addItem(item)
+    def createTaskList(self, session, projPath):
+        self.childList = ftrackUtils.getAllChildren(session, projPath)
+        if not len(self.childList) == 0:
+            self.taskList.clear()
+            for type, name in self.childList:
+                if type == 'assetbuild':
+                    icon = QtGui.QIcon()
+                    icon.addPixmap(QtGui.QPixmap("%s\\PNG\\box.png" % iconPath))
+                    item = QtGui.QListWidgetItem(icon, name)
+                elif type == 'task':
+                    icon = QtGui.QIcon()
+                    icon.addPixmap(QtGui.QPixmap("%s\\PNG\\signup.png" % iconPath))
+                    item = QtGui.QListWidgetItem(icon, name)
+                elif type == 'sequence':
+                    icon = QtGui.QIcon()
+                    icon.addPixmap(QtGui.QPixmap("%s\\PNG\\movie.png" % iconPath))
+                    item = QtGui.QListWidgetItem(icon, name)
+                else:
+                    item = QtGui.QListWidgetItem(name)
+                self.taskList.addItem(item)
 
     def setTaskPath(self):
         self.winClosed.emit(self.getTaskPath())
@@ -137,7 +139,7 @@ class LoginWidget(QtGui.QWidget):
 
     loginSuccessful = Signal(str)
 
-    def __init__(self, parent=None, filename=None):
+    def __init__(self, parent=None, filename=None, session=None):
         QtGui.QWidget.__init__(self, parent)
         self.setLayout(QtGui.QGridLayout())
         frameBox = QtGui.QWidget()
@@ -148,21 +150,21 @@ class LoginWidget(QtGui.QWidget):
         self.usernameEdit = QtGui.QLineEdit()
         frameLayout.addWidget(self.usernameEdit, 0, 1)
         self.loginButton = QtGui.QPushButton('Login')
-        self.loginButton.clicked.connect(lambda: self.loginButtonPressed(filename))
+        self.loginButton.clicked.connect(lambda: self.loginButtonPressed(session, filename))
         frameLayout.addWidget(self.loginButton, 2, 0)
         self.infoLabel = QtGui.QLabel()
         frameLayout.addWidget(self.infoLabel, 3, 1)
         self.layout().addWidget(frameBox)
         self.layout().addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding), 1, 0)
 
-    def loginButtonPressed(self, filename):
+    def loginButtonPressed(self, session, filename):
         if not filename:
             loginFile = os.path.join(os.environ['TEMP'], 'ftrack_login.txt')
         f = open(filename, 'w')
         username = str(self.usernameEdit.text())
         f.write(('LOGNAME:%s' % username))
         f.close()
-        if ftrackUtils.checkLogname(username):
+        if ftrackUtils.checkLogname(session, username):
             self.loginSuccessful.emit('Successful Login')
         else:
             self.infoLabel.setText('Incorrect username. Please try again.')
@@ -172,7 +174,7 @@ class MovieUploadWidget(QtGui.QWidget):
 
     uploadComplete = Signal(str)
 
-    def __init__(self, parent=None, taskid=None):
+    def __init__(self, parent=None, taskid=None, session=None):
         QtGui.QWidget.__init__(self, parent)
         self.setLayout(QtGui.QGridLayout())
         self.frameIn = 0
@@ -185,13 +187,13 @@ class MovieUploadWidget(QtGui.QWidget):
         taskid = taskid
         taskPath = ''
         if taskid:
-            taskPath = ftrackUtils.getTaskPath(taskid)
+            taskPath = ftrackUtils.getTaskPath(session, taskid)
         self.taskEdit = QtGui.QLineEdit(taskPath)
         self.taskEdit.setReadOnly(True)
         frameLayout.addWidget(self.taskEdit, 0, 1)
-        self.taskEdit.textChanged.connect(self.updateAssetDrop)
+        self.taskEdit.textChanged.connect(lambda: self.updateAssetDrop(session))
         self.browseButton = QtGui.QPushButton('Browse')
-        self.browseButton.clicked.connect(self.openBrowserDialog)
+        self.browseButton.clicked.connect(lambda: self.openBrowserDialog(session))
         frameLayout.addWidget(self.browseButton, 0, 2)
 
         frameLayout.addWidget(QtGui.QLabel('Assets:'), 1, 0)
@@ -230,19 +232,23 @@ class MovieUploadWidget(QtGui.QWidget):
         self.movieLabel.setMinimumWidth(100)
         self.movieLabel.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         frameLayout.addWidget(self.movieLabel)
+        self.framerate = '24'
 
         self.uploadButton = QtGui.QPushButton('Upload')
         self.uploadButton.setDisabled(True)
-        self.uploadButton.clicked.connect(self.uploadMovie)
+        self.uploadButton.clicked.connect(lambda: self.uploadMovie(session))
         frameLayout.addWidget(self.uploadButton, 6, 0)
         self.layout().addWidget(frameBox)
         self.layout().addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding), 1, 0)
         if not taskPath == '':
-            self.updateAssetDrop()
+            self.updateAssetDrop(session)
 
     def setFrameCount(self, framein, frameout):
         self.frameIn = framein
         self.frameOut = frameout
+
+    def setFrameRate(self, framerate):
+        self.framerate = framerate
 
     def setMoviePath(self, moviePath):
         self.movieLabel.setText(str(moviePath))
@@ -261,42 +267,42 @@ class MovieUploadWidget(QtGui.QWidget):
             self.assetEdit.setDisabled(True)
             self.enableUploadButton()
 
-    def updateAssetDrop(self):
+    def updateAssetDrop(self, session):
         newPath = str(self.taskEdit.text())
         self.assetDrop.clear()
         self.assetDrop.addItem('Select')
         self.assetDrop.addItem('new')
         self.assetEdit.setDisabled(False)
-        assetList = ftrackUtils.getAllAssets(newPath)
+        assetList = ftrackUtils.getAllAssets(session, newPath)
         self.assetDrop.addItems(assetList)
-        self.updateStatusDrop(newPath)
+        self.updateStatusDrop(session, newPath)
 
-    def updateStatusDrop(self, projectPath):
-        statusList = ftrackUtils.getStatusList(projectPath)
+    def updateStatusDrop(self, session, projectPath):
+        statusList = ftrackUtils.getStatusList(session, projectPath)
         self.statusDrop.clear()
         self.statusDrop.addItems(statusList)
-        currentStatus = ftrackUtils.getCurrentStatus(projectPath)
+        currentStatus = ftrackUtils.getCurrentStatus(session, projectPath)
         self.statusDrop.setCurrentIndex(statusList.index(currentStatus))
 
-    def openBrowserDialog(self):
+    def openBrowserDialog(self, session):
         taskpath = str(self.taskEdit.text())
-        self.gui = BrowserDialog(taskpath, parent=self)
+        self.gui = BrowserDialog(taskpath, parent=self, session=session)
         self.gui.show()
         self.gui.winClosed.connect(self.setPath)
 
     def enableUploadButton(self):
         self.uploadButton.setEnabled(True)
 
-    def uploadMovie(self):
+    def uploadMovie(self, session):
         self.uploadButton.setDisabled(True)
         self.uploadButton.setText('Uploading ...')
         inputFile = str(self.movieLabel.text())
         outfilemp4 =  os.path.splitext(inputFile)[0] + '.mp4'
         outfilewebm = os.path.splitext(inputFile)[0] + '.webm'
         thumnbail = os.path.join(os.path.split(inputFile)[0], 'thumbnail.png')
-        threading.Thread( None, self.newThreadUpload, args=[inputFile, outfilemp4, outfilewebm, thumnbail]).start()
+        threading.Thread( None, self.newThreadUpload, args=[session, inputFile, outfilemp4, outfilewebm, thumnbail]).start()
 
-    def newThreadUpload(self, inputFile, outfilemp4, outfilewebm, thumnbail):
+    def newThreadUpload(self, session, inputFile, outfilemp4, outfilewebm, thumnbail):
         result = self.convertFiles(inputFile, outfilemp4, outfilewebm)
         comment = str(self.commentBox.toPlainText())
         if result:
@@ -305,12 +311,11 @@ class MovieUploadWidget(QtGui.QWidget):
             assetName = str(self.assetDrop.currentText())
             if assetName == 'new':
                 assetName = str(self.assetEdit.text())
-            asset = ftrackUtils.getAsset(taskPath, assetName)
-
-            ftrackUtils.createAndPublishVersion(taskPath, comment, asset,
+            asset = ftrackUtils.getAsset(session, taskPath, assetName)
+            version = ftrackUtils.createAndPublishVersion(session, taskPath, comment, asset,
                                                 outfilemp4, outfilewebm, thumnbail,
-                                                self.frameIn, self.frameOut)
-            ftrackUtils.setTaskStatus(taskPath, str(self.statusDrop.currentText()))
+                                                self.frameIn, self.frameOut, self.framerate)
+            ftrackUtils.setTaskStatus(session, taskPath, version, str(self.statusDrop.currentText()))
         self.deleteFiles(outfilemp4, outfilewebm, thumnbail)
 
     def deleteFiles(self, outfilemp4, outfilewebm, thumbnail):
@@ -334,6 +339,7 @@ class MovieUploadWidget(QtGui.QWidget):
             return False
 
 '''def main():
+    import sys
     app = QtGui.QApplication(sys.argv)
     gui = MovieUploadWidget()
     gui.show()
