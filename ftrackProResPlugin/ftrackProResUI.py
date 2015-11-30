@@ -107,27 +107,9 @@ class FtrackProResMayaPlugin(QtGui.QWidget):
         frameLayout.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding))
         self.tabWidget.addTab(frameBox, 'ProRes Options')
 
-        loginFile = os.path.join(os.environ['TEMP'], 'ftrack_login.txt')
-        if self.loginNeeded(session, loginFile):
-            self.loginWidget = ftrackUpload.LoginWidget(filename=loginFile, session=session)
-            self.loginWidget.loginSuccessful.connect(self.updateTabWidget)
-            self.tabWidget.addTab(self.loginWidget, 'Ftrack Login')
-        else:
-            self.tabWidget.addTab(self.movieWidget, 'Ftrack Upload Options')
+        self.tabWidget.addTab(self.movieWidget, 'Ftrack Upload Options')
         self.layout().addWidget(self.tabWidget)
         self.getFrameCount()
-
-    def loginNeeded(self, session, loginFile):
-        if os.path.exists(loginFile):
-            f = open(loginFile, 'r')
-            username = f.readline().split(':')[1]
-            if ftrackUtils.checkLogname(session, username):
-                os.environ['LOGNAME'] = username
-                return False
-            else:
-                return True
-        else:
-            return True
 
     def updateTabWidget(self, tabStr):
         self.tabWidget.removeTab(1)
