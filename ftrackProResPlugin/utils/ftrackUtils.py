@@ -9,11 +9,7 @@ import json
 
 
 def startASession():
-    session = ftrack_api.Session(
-        server_url='http://192.168.0.105',
-        api_key='36d3599c-86bf-11e5-954c-0015170f7389',
-        api_user='Natasha'
-    )
+    session = ftrack_api.session.Session()
     return session
 
 def getInputFilePath(shotid):
