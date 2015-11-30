@@ -22,7 +22,7 @@ class scriptedCommand(OpenMayaMPx.MPxCommand):
         cmds.menuItem(parent=showMyMenuCtrl, label='ProResPlugin', command=cmd)
 
     def constructProResCmd(self):
-        proresPluginPath = 'P:\\dev\\ftrack-connect-package\\resource\\legacy_plugins\\LocoMayaPlugin\\ftrackProResPlugin'
+        proresPluginPath = 'P:\\dev\\ftrack-connect-package3.2\\resource\\legacy_plugins\\LocoMayaPlugin\\ftrackProResPlugin'
         if not proresPluginPath in sys.path:
             sys.path.append(proresPluginPath)
         cmd = 'from ftrackProResUI import FtrackProResMayaPlugin\n'

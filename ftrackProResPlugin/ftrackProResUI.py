@@ -22,6 +22,7 @@ class FtrackProResMayaPlugin(QtGui.QWidget):
 
     def __init__(self, parent=None):
         QtGui.QWidget.__init__(self, parent)
+        session = ftrackUtils.startASession()
         self.setWindowTitle('Loco VFX - ProRes Plugin')
         self.setLayout(QtGui.QGridLayout())
         self.setMinimumSize(320,200)
@@ -55,9 +56,9 @@ class FtrackProResMayaPlugin(QtGui.QWidget):
         frameLayout.addWidget(viewerBox)
 
         if os.environ.has_key('FTRACK_TASKID'):
-            self.movieWidget = ftrackUpload.MovieUploadWidget(taskid=os.environ['FTRACK_TASKID'])
+            self.movieWidget = ftrackUpload.MovieUploadWidget(taskid=os.environ['FTRACK_TASKID'], session=session)
         else:
-            self.movieWidget = ftrackUpload.MovieUploadWidget()
+            self.movieWidget = ftrackUpload.MovieUploadWidget(session=session)
         self.movieWidget.setMoviePath(str(self.outputWidget.getFilePath()))
         self.outputWidget.fileEdit.textChanged.connect(self.movieWidget.setMoviePath)
         self.movieWidget.uploadComplete.connect(self.showUploadCompleteDialog)
@@ -66,7 +67,13 @@ class FtrackProResMayaPlugin(QtGui.QWidget):
         hLayout = QtGui.QHBoxLayout()
         self.slugBox = QtGui.QCheckBox('Slug')
         hLayout.addWidget(self.slugBox)
-        self.slugBox.stateChanged.connect(self.showSlugOptions)
+        self.slugBox.stateChanged.connect(lambda: self.showSlugOptions(session, self.slugBox.checkState()))
+        hLayout.addItem(QtGui.QSpacerItem(10, 10, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum))
+        hLayout.addWidget(QtGui.QLabel('Frame Rate'))
+        self.frameDrop = QtGui.QComboBox()
+        self.frameDrop.addItems(['24', '25', '30'])
+        hLayout.addWidget(self.frameDrop)
+        hLayout.addItem(QtGui.QSpacerItem(10, 10, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum))
         vLayout.addLayout(hLayout)
         vLayout.addItem(QtGui.QSpacerItem(10, 10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding))
 
@@ -100,27 +107,9 @@ class FtrackProResMayaPlugin(QtGui.QWidget):
         frameLayout.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding))
         self.tabWidget.addTab(frameBox, 'ProRes Options')
 
-        loginFile = os.path.join(os.environ['TEMP'], 'ftrack_login.txt')
-        if self.loginNeeded(loginFile):
-            self.loginWidget = ftrackUpload.LoginWidget(filename=loginFile)
-            self.loginWidget.loginSuccessful.connect(self.updateTabWidget)
-            self.tabWidget.addTab(self.loginWidget, 'Ftrack Login')
-        else:
-            self.tabWidget.addTab(self.movieWidget, 'Ftrack Upload Options')
+        self.tabWidget.addTab(self.movieWidget, 'Ftrack Upload Options')
         self.layout().addWidget(self.tabWidget)
         self.getFrameCount()
-
-    def loginNeeded(self, loginFile):
-        if os.path.exists(loginFile):
-            f = open(loginFile, 'r')
-            username = f.readline().split(':')[1]
-            if ftrackUtils.checkLogname(username):
-                os.environ['LOGNAME'] = username
-                return False
-            else:
-                return True
-        else:
-            return True
 
     def updateTabWidget(self, tabStr):
         self.tabWidget.removeTab(1)
@@ -144,7 +133,7 @@ class FtrackProResMayaPlugin(QtGui.QWidget):
                                         area='right', content=columnLay, width=500)
         cmds.control(str(self.objectName()),e=True,p=columnLay)
 
-    def showSlugOptions(self, state):
+    def showSlugOptions(self, session, state):
         '''
         Sets visibilty of slug options based on state of slug check box.
         Resizes the window appropriately.
@@ -154,11 +143,11 @@ class FtrackProResMayaPlugin(QtGui.QWidget):
             self.slugFrameBox.setVisible(True)
             infile = str(self.inputWidget.getFilePath())
             if infile:
-                self.setSlugLabel(infile)
+                self.setSlugLabel(session, infile)
         else:
             self.slugFrameBox.setVisible(False)
 
-    def setSlugLabel(self, filename):
+    def setSlugLabel(self, session, filename):
         '''
         Sets the slug label based on input file name.
         :param filename: Name of the input file
@@ -167,7 +156,7 @@ class FtrackProResMayaPlugin(QtGui.QWidget):
         imageExt = str(filename).split('.')[-1]
         if inputFolder:
             if os.environ.has_key('FTRACK_SHOTID'):
-                project = ftrackUtils.getProjectFromShot(os.environ['FTRACK_SHOTID'])
+                project = ftrackUtils.getProjectFromShot(session, os.environ['FTRACK_SHOTID'])
             else:
                 project = utils.getProjectName(inputFolder)
             if imageExt.lower() == 'avi' or imageExt.lower() == 'mov':
@@ -187,6 +176,8 @@ class FtrackProResMayaPlugin(QtGui.QWidget):
         self.slugTextBox.setText(label)
 
     def createMovie(self):
+        frameRate = self.frameDrop.currentText()
+        self.movieWidget.setFrameRate(frameRate)
         self.pBar.setVisible(True)
         self.pLabel.setVisible(True)
         self.pBar.setValue(0)
