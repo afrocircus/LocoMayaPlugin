@@ -4,7 +4,7 @@ import os
 import PySide.QtGui as QtGui
 from PySide.QtCore import Qt
 import threading
-from utils import ftrackUtils
+from LocoMayaPlugin.ftrackProResPlugin.utils import ftrackUtils
 from PySide.QtCore import Signal
 
 iconPath = 'P:\\dev\\ftrack-connect-package\\resource\\ftrack_connect_nuke\\nuke_path\\NukeProResPlugin'
