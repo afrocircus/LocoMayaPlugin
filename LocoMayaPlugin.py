@@ -20,13 +20,18 @@ class scriptedCommand(OpenMayaMPx.MPxCommand):
         showMyMenuCtrl = cmds.menu('LocoVFX', parent=gMainWindow, tearOff=False, label='LocoVFX')
         cmd = self.constructProResCmd()
         cmds.menuItem(parent=showMyMenuCtrl, label='ProResPlugin', command=cmd)
+        cmd2 = self.constructWorkspaceCmd()
+        cmds.menuItem(parent=showMyMenuCtrl, label='WorkspaceManager', command=cmd2)
 
     def constructProResCmd(self):
-        proresPluginPath = 'P:\\dev\\ftrack-connect-package3.2\\resource\\legacy_plugins\\LocoMayaPlugin\\ftrackProResPlugin'
-        if not proresPluginPath in sys.path:
-            sys.path.append(proresPluginPath)
-        cmd = 'from ftrackProResUI import FtrackProResMayaPlugin\n'
-        cmd += 'form = FtrackProResMayaPlugin()\n'
+        cmd = 'from LocoMayaPlugin.ftrackProResPlugin import ftrackProResUI\n'
+        cmd += 'form = ftrackProResUI.FtrackProResMayaPlugin()\n'
+        cmd += 'form.createDockLayout()'
+        return cmd
+
+    def constructWorkspaceCmd(self):
+        cmd = 'from LocoMayaPlugin import workspacePlugin\n'
+        cmd += 'form = workspacePlugin.WorkspaceWidget()\n'
         cmd += 'form.createDockLayout()'
         return cmd
 
