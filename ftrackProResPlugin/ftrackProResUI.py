@@ -11,7 +11,7 @@ import maya.mel as mm
 import subprocess
 import shlex
 from utils import ftrackUtils
-from  utils import utils
+from utils import utils
 from gui import fileBrowser
 from gui import ftrackUpload
 
