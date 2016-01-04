@@ -64,7 +64,12 @@ class WorkspaceWidget(QtGui.QWidget):
 
     def openMayaFile(self, filename):
         filename = filename.replace('\\', '/')
-        cmds.file(filename, o=True, f=True)
+        filebase, ext = os.path.splitext(filename)
+        if ext == '.ma' or ext == '.mb':
+            cmds.file(filename, o=True, f=True)
+        else:
+            QtGui.QMessageBox.warning(self, 'Invalid file', 'Invalid file. Please select a maya file only.')
+
 
     def writePathToFile(self, basedir, baseFile):
         f = open(baseFile, 'w')
